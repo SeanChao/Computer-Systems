@@ -31,13 +31,13 @@ void test_show_bytes(int val) {
     show_pointer(pval);
 }
 
-int main() {
-    test_show_bytes(2147483647);
-    show_bytes("12345", 6);
+// int main() {
+//     test_show_bytes(2147483647);
+//     show_bytes("12345", 6);
 
-    // test 2's complement representation
-    short num = 12345;
-    short n_num = -num;
-    show_bytes(&num, sizeof(num));
-    show_bytes(&n_num, sizeof(num));
-}
+//     // test 2's complement representation
+//     short num = 12345;
+//     short n_num = -num;
+//     show_bytes(&num, sizeof(num));
+//     show_bytes(&n_num, sizeof(num));
+// }
