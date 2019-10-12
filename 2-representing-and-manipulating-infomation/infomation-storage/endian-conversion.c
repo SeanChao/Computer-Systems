@@ -1,7 +1,7 @@
 #include <stdio.h>
 #define DATA_LE32(data)                                         \
     ((((data)&0x000000ff) << 24) | (((data)&0x0000ff00) << 8) | \
-     (((data)&0x00ff0000) >> 8) | (((data)&0xff000000) >> 24))
+     (((data) >> 8) & 0x00ff0000) | (((data) >> 24) & 0xff000000))
 /**
  * Notes on DATA_LE32:
  * refer to: DATA_LE32 macro in:
