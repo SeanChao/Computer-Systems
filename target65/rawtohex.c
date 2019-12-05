@@ -5,8 +5,10 @@ int main() {
     // char str[] = "The big brother is watching him! You'll be sent to 101..";
     
     // LEVEL 2:
-    char str[] = "Hope,a good thing. No good things ever dies";
+    // char str[] = "Hope,a good thing. No good things ever dies";
 
+    // LEVEL 3:
+    char str[] = "110dfc17";
     // scanf("%s", str);
 
     int i = 0;

