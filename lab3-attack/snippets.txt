@@ -1,0 +1,7 @@
+b getbuf
+b touch3
+b hexmatch
+b strncmp
+r < exploit-raw-3.txt -q
+x/56x 0x5567c608
+p/s (char *)0x5567c613

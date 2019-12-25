@@ -8,8 +8,10 @@ int main() {
     // char str[] = "Hope,a good thing. No good things ever dies";
 
     // LEVEL 3:
-    char str[] = "110dfc17";
-    // scanf("%s", str);
+    // char str[] = "110dfc17";
+
+    // LEVEL 4:
+    char str[] = "I love ICS, but ICS don't love me...:-(";
 
     int i = 0;
     while (str[i] != '\0') {

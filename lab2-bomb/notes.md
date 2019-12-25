@@ -1,5 +1,13 @@
 # Hacking! Diassembly
 
+## Useful Cheat Sheet
+
+### Function Parameter
+
+| 1    | 2    | 3    | 4    | 5   | 6   |
+| ---- | ---- | ---- | ---- | --- | --- |
+| %rdi | %rsi | %rdx | %rcx | %r8 | %r9 |
+
 ## Gnu Debugger(GDB)
 
 ```sh
@@ -24,4 +32,10 @@ print/s (char *)0x8048538
 ```sh
 x $rsp
 x/s $rdi
+```
+
+### Modify Values
+
+```sh
+set {int}0x7fffffffe0f8 = 233
 ```
