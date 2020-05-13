@@ -1,3 +1,6 @@
 **/ipch
 **/.build
 .history/
+
+*.o
+main
