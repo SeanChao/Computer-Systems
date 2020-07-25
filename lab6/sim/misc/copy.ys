@@ -1,0 +1,48 @@
+# name: 施超, ID: 518021910499
+    .pos 0
+    irmovq stack, %rsp
+    call main
+    halt
+
+.align 8
+# Source block
+src:
+    .quad 0x00a
+    .quad 0x0b0
+    .quad 0xc00
+
+# Destination block
+dest:
+    .quad 0x111
+    .quad 0x222
+    .quad 0x333
+
+
+main: 
+    irmovq src, %rdi
+    irmovq dest, %rsi
+    irmovq $3, %rdx
+    call copy_block
+    halt
+
+# src in $rdi, dest in %rsi, len in %rdx
+copy_block:
+    irmovq $0, %rax # result
+test:
+    andq %rdx, %rdx
+    jle end
+loop:
+    mrmovq (%rdi), %r8  # val = *src
+    irmovq $8, %r9
+    addq %r9, %rdi
+    rmmovq %r8, (%rsi)
+    addq %r9, %rsi
+    xorq %r8, %rax
+    irmovq $1, %r9
+    subq %r9, %rdx
+    jmp test
+end:
+    ret
+
+    .pos 0x200
+stack:

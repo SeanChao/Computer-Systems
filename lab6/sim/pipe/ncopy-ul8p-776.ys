@@ -1,0 +1,144 @@
+#/* $begin ncopy-ys */
+##################################################################
+# ncopy.ys - Copy a src block of len words to dst.
+# Return the number of positive words (>0) contained in src.
+#
+# Include your name and ID here.
+# name: 施超 ID: 518021910499
+# Describe how and why you modified the baseline code.
+# 1. use iaddq to replace irmovq+addq
+# 2. move len-- after reading val from src to eliminate one bubble -> 11.7
+# loop unrolling 8.65 -> 8.34, 8.26 del andq
+# ul 2: 8.91 5: 8.23
+# remove xorq %rax -> 8.19
+# try union mrmovq in remainder -> 8.05
+# 7.82->53.6
+# 7.73
+##################################################################
+# Do not modify this portion
+# Function prologue.
+# %rdi = src, %rsi = dst, %rdx = len
+ncopy:
+
+##################################################################
+# You can modify this portion
+	# Loop header
+	# xorq %rax,%rax		# count = 0;
+	iaddq $-8, %rdx		# len -= 4
+	jl Last			# if so, goto Done:
+
+Loop:
+	mrmovq (%rdi), %r8	# read val from src...
+	mrmovq 8(%rdi), %r9
+	mrmovq 16(%rdi), %r10
+	mrmovq 24(%rdi), %r11
+	mrmovq 32(%rdi), %r12
+	mrmovq 40(%rdi), %r13
+	mrmovq 48(%rdi), %r14
+	mrmovq 56(%rdi), %rcx
+	rmmovq %r8, (%rsi)	# ...and store it to dst
+	rmmovq %r9, 8(%rsi)
+	rmmovq %r10, 16(%rsi)
+	rmmovq %r11, 24(%rsi)
+	rmmovq %r12, 32(%rsi)
+	rmmovq %r13, 40(%rsi)
+	rmmovq %r14, 48(%rsi)
+	rmmovq %rcx, 56(%rsi)
+	andq %r8, %r8		# val <= 0?
+	jle N1			# if so, goto Npos:
+	iaddq $1, %rax		# count++
+N1:	andq %r9, %r9		# val <= 0?
+	jle N2			# if so, goto Npos:
+	iaddq $1, %rax		# count++
+N2:	andq %r10, %r10		# val <= 0?
+	jle N3			# if so, goto Npos:
+	iaddq $1, %rax		# count++
+N3:	andq %r11, %r11		# val <= 0?
+	jle N4			# if so, goto Npos:
+	iaddq $1, %rax		# count++
+N4:	andq %r12, %r12		# val <= 0?
+	jle N5			# if so, goto Npos:
+	iaddq $1, %rax		# count++
+N5:	andq %r13, %r13		# val <= 0?
+	jle N6			# if so, goto Npos:
+	iaddq $1, %rax		# count++
+N6:	andq %r14, %r14		# val <= 0?
+	jle N7			# if so, goto Npos:
+	iaddq $1, %rax		# count++
+N7:	andq %rcx, %rcx		# val <= 0?
+	jle Npos			# if so, goto Npos:
+	iaddq $1, %rax		# count++
+Npos:
+	iaddq $64, %rdi		# src++
+	iaddq $64, %rsi		# dst++
+	iaddq $-8, %rdx		# len--
+	jge Loop			# if so, goto Loop:
+
+# handling rest part
+Last:
+	# %rdx: -8, -7, -6, -5, -4, -3, -2, -1
+	# remain 0,  1,  2,  3,  4,  5,  6,  7 
+R4:	iaddq $4, %rdx
+	jl R2
+	mrmovq (%rdi),%r8
+    mrmovq 8(%rdi),%r9
+	mrmovq 16(%rdi), %r10
+	mrmovq 24(%rdi), %r11
+	rmmovq %r8,(%rsi)
+    rmmovq %r9,8(%rsi)
+    rmmovq %r10,16(%rsi)
+    rmmovq %r11,24(%rsi)
+	iaddq $32, %rsi		# dst++
+	iaddq $32, %rdi		# src++
+	andq %r8, %r8
+	jle L1
+	iaddq $1, %rax
+L1:	andq %r9, %r9
+	jle L2
+	iaddq $1, %rax
+L2:	andq %r10, %r10
+	jle L3
+	iaddq $1, %rax
+L3:	andq %r11, %r11
+	jle L4
+	iaddq $1, %rax
+L4:	
+	iaddq $-4, %rdx
+
+R2:	
+	iaddq $2, %rdx
+	jl R1
+	# mrmovq 16(%rdi), %rcx
+	mrmovq (%rdi), %r8
+    mrmovq 8(%rdi), %r9
+	rmmovq %r8, (%rsi)
+    rmmovq %r9, 8(%rsi)
+	iaddq $16, %rdi		# src++
+	iaddq $16, %rsi		# dst++
+	andq %r8, %r8
+	jle L11
+	iaddq $1, %rax
+L11:	
+	andq %r9, %r9
+	jle L12
+	iaddq $1, %rax
+L12:
+	iaddq $-2, %rdx
+# R1a: mrmovq (%rdi), %rcx
+R1:
+	iaddq $1, %rdx
+	jl Done
+	mrmovq (%rdi), %rcx
+	rmmovq %rcx, (%rsi)
+	andq %rcx, %rcx
+	jle Done
+	iaddq $1, %rax
+##################################################################
+# Do not modify the following section of code
+# Function epilogue.
+Done:
+	ret
+##################################################################
+# Keep the following label at the end of your function
+End:
+#/* $end ncopy-ys */

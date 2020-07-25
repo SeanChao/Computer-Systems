@@ -1,0 +1,89 @@
+#/* $begin ncopy-ys */
+##################################################################
+# ncopy.ys - Copy a src block of len words to dst.
+# Return the number of positive words (>0) contained in src.
+#
+# Include your name and ID here.
+# name: 施超 ID: 518021910499
+# Describe how and why you modified the baseline code.
+# 1. use iaddq to replace irmovq+addq
+# 2. move len-- after reading val from src to eliminate one bubble -> 11.7
+# loop unrolling 8.65 -> 8.34, 8.26 del andq
+# ul 2: 8.91 5: 8.23
+##################################################################
+# Do not modify this portion
+# Function prologue.
+# %rdi = src, %rsi = dst, %rdx = len
+ncopy:
+
+##################################################################
+# You can modify this portion
+	# Loop header
+	xorq %rax,%rax		# count = 0;
+	iaddq $-4, %rdx		# len -= 4
+	jl Last			# if so, goto Done:
+
+Loop:
+	mrmovq (%rdi), %r10	# read val from src...
+	mrmovq 8(%rdi), %r11
+	mrmovq 16(%rdi), %r12
+	mrmovq 24(%rdi), %r13
+	rmmovq %r10, (%rsi)	# ...and store it to dst
+	rmmovq %r11, 8(%rsi)
+	rmmovq %r12, 16(%rsi)
+	rmmovq %r13, 24(%rsi)
+	andq %r10, %r10		# val <= 0?
+	jle N1				# if so, goto Npos:    
+	iaddq $1, %rax		# count++
+N1:	andq %r11, %r11		# val <= 0?
+	jle N2				# if so, goto Npos:
+	iaddq $1, %rax		# count++
+N2:	andq %r12, %r12		# val <= 0?
+	jle N3				# if so, goto Npos:
+	iaddq $1, %rax		# count++
+N3:	andq %r13, %r13		# val <= 0?
+	jle Npos			# if so, goto Npos:
+	iaddq $1, %rax		# count++
+Npos:
+	iaddq $32, %rdi		# src++
+	iaddq $32, %rsi		# dst++
+	iaddq $-4, %rdx		# len--
+	jge Loop			# if so, goto Loop:
+Last:
+	iaddq $4, %rdx
+	jle Done
+	mrmovq (%rdi), %r10
+	iaddq $8, %rdi		# src++
+	rmmovq %r10, (%rsi)
+	iaddq $8, %rsi		# dst++
+	andq %r10, %r10
+	jle L1
+	iaddq $1, %rax
+L1:	iaddq $-1, %rdx
+	jle Done
+	mrmovq (%rdi), %r10
+	iaddq $8, %rdi		# src++
+	rmmovq %r10, (%rsi)
+	iaddq $8, %rsi		# dst++
+	andq %r10, %r10
+	jle L2
+	iaddq $1, %rax
+L2:	iaddq $-1, %rdx
+	jle Done
+	mrmovq (%rdi), %r10
+	iaddq $8, %rdi		# src++
+	rmmovq %r10, (%rsi)
+	iaddq $8, %rsi		# dst++
+	andq %r10, %r10
+	jle L3
+	iaddq $1, %rax
+L3:	iaddq $-1, %rdx
+##################################################################
+# Do not modify the following section of code
+# Function epilogue.
+Done:
+	ret
+##################################################################
+# Keep the following label at the end of your function
+End:
+#/* $end ncopy-ys */

@@ -23,8 +23,7 @@ int lineno = 0;
                     lineno, ##_a); \
     } while (0);
 
-int64_t vmaddr = 0;      /* vm addr */
-int64_t paddingSize = 0; /* vm addr */
+int64_t vmaddr = 0; /* vm addr */
 
 /* register table */
 const reg_t reg_table[REG_NONE] = {
@@ -111,9 +110,7 @@ void printst() {
 symbol_t *find_symbol(char *name) {
     symbol_t *tmp = symtab->next;
     while (tmp) {
-        if (strcmp(tmp->name, name) == 0) {
-            return tmp;
-        }
+        if (strcmp(tmp->name, name) == 0) return tmp;
         tmp = tmp->next;
     }
     return NULL;
@@ -286,7 +283,6 @@ parse_t parse_reg(char **ptr, regid_t *regid) {
  *     PARSE_ERR: error, the value of 'ptr' and 'name' are undefined
  */
 parse_t parse_symbol(char **ptr, char **name) {
-    // TODO: Error handling
     /* skip the blank and check */
     SKIP_BLANK(*ptr);
     // err_print("parse_symbol: %s", *ptr);
@@ -303,7 +299,6 @@ parse_t parse_symbol(char **ptr, char **name) {
     *name = (char *)malloc(sizeof(char) * len);
     strncpy(*name, tmp, len);
     return PARSE_SYMBOL;
-    // return PARSE_ERR;
 }
 
 /*
@@ -416,7 +411,10 @@ parse_t parse_data(char **ptr, char **name, long *value) {
         return PARSE_DIGIT;
     }
     /* if IS_LETTER, then parse the symbol */
-
+    if (IS_LETTER(*ptr)) {
+        parse_symbol(ptr, name);  // name is allocate in this function call
+        return PARSE_SYMBOL;
+    }
     /* set 'ptr', 'name' and 'value' */
 
     return PARSE_ERR;
@@ -472,7 +470,7 @@ type_t parse_line(line_t *line) {
     if (IS_END(c)) return PARSE_DELIM;
 
     /* is a comment ? */
-    if (IS_COMMENT(c)) return TYPE_COMM;  // TODO: fix return value
+    if (IS_COMMENT(c)) return TYPE_COMM;
 
     /* is a label ? */
     char *name;
@@ -529,10 +527,10 @@ type_t parse_line(line_t *line) {
         case I_RET:
             line->y64bin.codes[binPos++] = ins->code;
             break;
-        case 0x2:  // rrmovq
-        case 0x6:  // OPq rA, rB
-        case 0xA:
-        case 0xB:
+        case I_RRMOVQ:  // rrmovq
+        case I_ALU:     // OPq rA, rB
+        case I_PUSHQ:
+        case I_POPQ:
             line->y64bin.codes[binPos++] = ins->code;
             // TODO: nessary to distinguish symbols here?
             if (parse_reg(&c, &rA) == PARSE_ERR) {
@@ -549,7 +547,7 @@ type_t parse_line(line_t *line) {
             // err_print(" --> a=%x b=%x", rA, rB);
             line->y64bin.codes[binPos++] = HPACK(rA, rB);
             break;
-        case 0x3:  // irmovq V, rB
+        case I_IRMOVQ:  // irmovq V, rB
             line->y64bin.codes[binPos++] = ins->code;
             SKIP_BLANK(c);
             if (IS_LETTER(c)) {
@@ -574,7 +572,7 @@ type_t parse_line(line_t *line) {
                 line->y64bin.codes[binPos++] = (quadWord >> 8 * i) & 0xFF;
             }
             break;
-        case 0x4:  // rmmovq rA, D(rB)
+        case I_RMMOVQ:  // rmmovq rA, D(rB)
             line->y64bin.codes[binPos++] = ins->code;
             if (parse_reg(&c, &rA) == PARSE_ERR) {
                 return TYPE_ERR;
@@ -588,7 +586,7 @@ type_t parse_line(line_t *line) {
                 line->y64bin.codes[binPos++] = (quadWord >> 8 * i) & 0xFF;
             }
             break;
-        case 0x5:  // mrmovq D(rB), rA
+        case I_MRMOVQ:  // mrmovq D(rB), rA
             line->y64bin.codes[binPos++] = ins->code;
             if (parse_mem(&c, &quadWord, &rB) == PARSE_ERR) {
                 return TYPE_ERR;
@@ -603,7 +601,6 @@ type_t parse_line(line_t *line) {
             }
             break;
         case 0x7:  // jxx Dest
-            line->y64bin.codes[binPos++] = ins->code;
         case 0x8:  // call Dest
             line->y64bin.codes[binPos++] = ins->code;
             if (parse_symbol(&c, &name) == PARSE_ERR) {
@@ -616,34 +613,24 @@ type_t parse_line(line_t *line) {
             }
             break;
         case I_DIRECTIVE:
-            if (parse_digit(&c, &quadWord) == PARSE_ERR) {
-                char *sym;
-                // err_print("parse digit failed, try parse symbol");
-                if (parse_symbol(&c, &sym) == PARSE_ERR) {
-                    err_print("line 489");
+            switch (parse_data(&c, &symbol, &quadWord)) {
+                case PARSE_SYMBOL:
+                    add_reloc(symbol, &(line->y64bin));
+                    break;
+                case PARSE_DIGIT:
+                    break;
+                default:
                     return TYPE_ERR;
-                } else {
-                    // err_print("all relocate symbol: %s", sym);
-                    add_reloc(sym, &(line->y64bin));
-                }
-                // err_print("Unknown symbol:'%s'", c);
-                // return TYPE_ERR;
             }
             switch ((ins->code) & 0xf) {
                 case D_DATA:
                     line->type = TYPE_INS;
-                    // line->y64bin.addr = vmaddr;
                     size_t size = ins->bytes;
-                    for (int i = 0; i < size; i++) {
-                        // err_print("quadWord-byte: 0x%lx", (quadWord >> 8 * i)
-                        // &0xff);
+                    for (int i = 0; i < size; i++)
                         line->y64bin.codes[i] = (quadWord >> 8 * i) & 0xff;
-                    }
                     line->y64bin.bytes = size;
                     break;
                 case D_ALIGN:
-                    paddingSize +=
-                        (vmaddr + quadWord - 1) / quadWord * quadWord - vmaddr;
                     vmaddr = (vmaddr + quadWord - 1) / quadWord * quadWord;
                     line->y64bin.addr = vmaddr;
                     line->type = TYPE_INS;
@@ -652,7 +639,6 @@ type_t parse_line(line_t *line) {
                 case D_POS:
                     // set vm address to given number
                     line->y64bin.addr = quadWord;
-                    // paddingSize += quadWord - vmaddr;
                     vmaddr = quadWord;
                     line->y64bin.bytes = 0;
                     break;
@@ -750,17 +736,17 @@ int relocate(void) {
             case D_DATA:
                 index = 0;
                 break;
-            case 0x7:
-            case 0x8:
+            case I_JMP:
+            case I_CALL:
                 index = 1;
                 break;
-            case 0x3:
-            case 0x4:
-            case 0x5:
+            case I_IRMOVQ:
+            case I_RMMOVQ:
+            case I_MRMOVQ:
                 index = 2;
                 break;
             default:
-                err_print("uncaught relocate index!");
+                // err_print("uncaught relocate index!");
                 break;
         }
         for (int i = 0; i < 8; i++)
@@ -768,7 +754,6 @@ int relocate(void) {
         /* next */
         rtmp = rtmp->next;
     }
-    // err_print("ret relocate");
     return 0;
 }
 
@@ -787,7 +772,6 @@ int binfile(FILE *out) {
     line_t *line = line_head->next;
     // size_t size = (line_tail->y64bin.bytes == 0) ? 0 : vmaddr;
     byte_t *bin_image = (byte_t *)calloc((vmaddr), sizeof(byte_t));
-    // err_print("malloc %ld bytes", vmaddr - paddingSize);
     while (line) {
         // err_print("write line: \033[0;34m%s\033[0m", line->y64asm);
         if (line->y64bin.bytes != 0) {
