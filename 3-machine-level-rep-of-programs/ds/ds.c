@@ -19,6 +19,15 @@ union ele {
     } e2;
 } u;
 
+// size is 24: 8 (4) 10 (4) => 24 => 3 * 8
+struct sunshine {
+    int brightness;
+    union light {
+        void *wave;
+        char particles[10];
+    } white;
+} orange;
+
 int main() {
     char str[3];
     printf("%ld\n", sizeof(str));
@@ -31,4 +40,5 @@ int main() {
     printf("%p\n", &u.e1.li);
     printf("%p\n", &u.e2.f);
     printf("%p\n", &u.e2.p[1]);
+    printf("size of sunshine: %ld\n", sizeof(orange));
 }
